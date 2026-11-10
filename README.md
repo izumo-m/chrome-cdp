@@ -110,9 +110,10 @@ clone した `~/.claude/skills/chrome-cdp/README.md` のこの節を読み直し
 
    `~/.claude/skills/chrome-cdp` が既にあるときは clone しない。
 
-   - `~/.claude/skills/chrome-cdp/.git` があり、`git -C ~/.claude/skills/chrome-cdp remote get-url origin` が
+   - `~/.claude/skills/chrome-cdp/.git` があり、`git -C ~/.claude/skills/chrome-cdp config --get remote.origin.url` が
      このリポジトリ(`https://github.com/izumo-m/chrome-cdp.git` や `git@github.com:izumo-m/chrome-cdp.git`)なら、
-     `git -C ~/.claude/skills/chrome-cdp pull --ff-only` で更新して続ける。
+     `git -C ~/.claude/skills/chrome-cdp pull --ff-only` で更新して続ける。`git remote get-url` は使わない
+     (git の設定の `url.<base>.insteadOf` で読み替えた後の URL を返すので、このリポジトリでも違って見えることがある)。
    - そうでなければ上書きせず、置き換えてよいかユーザーに聞く。置き換えるなら、既存のディレクトリを
      `~/.claude/skills` の外に移してから clone する(`~/.claude/skills` の下に残すと、同じ名前の skill が
      2 つ読み込まれる)。置き換えないなら、設定をやめる。
