@@ -14,6 +14,13 @@
   Windows によっては TCP の一覧(netstat.exe)から待ち受けの行が抜けるため。リレーと Chrome が動いているかを、
   Windows のプロセスのコマンドラインで判定するようにした。
 
+### セキュリティ
+
+- 既定のプロファイルを `C:\temp\chrome-cdp-profile` から `%USERPROFILE%\.cache\chrome-cdp\profile` に変えた。
+  `C:\temp` の下は、そのマシンにログインできる全員が読み書きできるため。リレーのコピーも
+  `%LOCALAPPDATA%\chrome-cdp` から `%USERPROFILE%\.cache\chrome-cdp` に移した。前の場所はもう使わないので、
+  要らなければ削除する。
+
 ### 変更
 
 - stop は、CDP で応答した Chrome 本体のプロセス ID が、設定したプロファイルの Chrome と一致するときだけ閉じる。

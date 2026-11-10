@@ -9,7 +9,7 @@
 #
 #   Started and stopped by chrome-cdp.sh in the same directory (stop = the
 #   process is killed). chrome-cdp.sh copies this file to
-#   %LOCALAPPDATA%\chrome-cdp and runs that copy.
+#   %USERPROFILE%\.cache\chrome-cdp and runs that copy.
 #
 #   Keep this file ASCII-only: PowerShell 5.1 reads a BOM-less file as ANSI.
 #

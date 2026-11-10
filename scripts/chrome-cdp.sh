@@ -40,13 +40,14 @@ set -euo pipefail
 
 DEFAULT_PORT=9222
 DEFAULT_CHROME_EXE="/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"
-DEFAULT_USER_DATA_DIR='C:\temp\chrome-cdp-profile'   # 普段使いとは別のプロファイル(無ければ Chrome が作る)
+# Windows 側の作業ディレクトリ。既定のプロファイル(profile)とリレーのコピー(cdp-relay.ps1)を置く。
+#   本人しか読み書きできない %USERPROFILE% の下にする。C:\temp などはログインできる全員が読み書きできるので、
+#   ほかのユーザーにプロファイル(履歴など)を読まれたり、書き換えられたりする。
+WIN_BASE_DESC='%USERPROFILE%\.cache\chrome-cdp'
 PORT=${CHROME_CDP_PORT:-$DEFAULT_PORT}
 CHROME_EXE=${CHROME_CDP_EXE:-$DEFAULT_CHROME_EXE}
-USER_DATA_DIR=${CHROME_CDP_USER_DATA_DIR:-$DEFAULT_USER_DATA_DIR}
-# start が Chrome に渡す引数。拡張機能は無効にする(拡張機能の content script が画面の書き換えに反応して、
-# 操作のたびに数秒固まったことがある)
-CHROME_ARGS=(--remote-debugging-port="$PORT" --user-data-dir="$USER_DATA_DIR" --disable-extensions)
+# USER_DATA_DIR と CHROME_ARGS は、%USERPROFILE% を cmd.exe で聞いてから init_paths で決める
+WIN_BASE='' USER_DATA_DIR='' CHROME_ARGS=()
 PROG=$(basename "$0")
 REPO_URL=https://github.com/izumo-m/chrome-cdp
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
@@ -92,13 +93,39 @@ is_mirrored() { [ "$(net_mode)" = mirrored ]; }
 # パイプの awk は途中で exit しない。前段が SIGPIPE で死に、pipefail + set -e で無言終了するため。
 host_ip() { ip route show default | awk 'NR == 1 {print $3}'; }
 
-# リレー本体の Windows 側コピー先(%LOCALAPPDATA%\chrome-cdp)。
+# Windows 側の作業ディレクトリ(%USERPROFILE%\.cache\chrome-cdp を展開したもの)を WIN_BASE に入れる。
+#   取得できなければ非 0 を返す。変数に入れるので $(...) では呼ばない。
+win_base() {
+    local up
+    [ -z "$WIN_BASE" ] || return 0
+    up=$(cd /mnt/c && "$CMD" /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r') || return 1
+    [ -n "$up" ] && [ "$up" != '%USERPROFILE%' ] || return 1
+    WIN_BASE="$up\\.cache\\chrome-cdp"
+}
+
+# start が Chrome に渡す引数。拡張機能は無効にする(拡張機能の content script が画面の書き換えに反応して、
+# 操作のたびに数秒固まったことがある)
+set_chrome_args() {
+    CHROME_ARGS=(--remote-debugging-port="$PORT" --user-data-dir="$USER_DATA_DIR" --disable-extensions)
+}
+
+# USER_DATA_DIR(CHROME_CDP_USER_DATA_DIR、無ければ WIN_BASE\profile)と CHROME_ARGS を決める。
+#   status / start / stop の前に呼ぶ。
+init_paths() {
+    if [ -n "${CHROME_CDP_USER_DATA_DIR:-}" ]; then
+        USER_DATA_DIR=$CHROME_CDP_USER_DATA_DIR
+    else
+        win_base || die "Windows の USERPROFILE を取得できない(WSL の interop を確認する)"
+        USER_DATA_DIR="$WIN_BASE\\profile"
+    fi
+    set_chrome_args
+}
+
+# リレー本体の Windows 側コピー先(WIN_BASE の WSL のパス)。
 #   \\wsl.localhost 上の .ps1 を直接実行させず、Windows のローカルパスに置いて実行する。
 win_dir() {
-    local la
-    la=$(cd /mnt/c && "$CMD" /c 'echo %LOCALAPPDATA%' 2>/dev/null | tr -d '\r')
-    [ -n "$la" ] && [ "$la" != '%LOCALAPPDATA%' ] || die "LOCALAPPDATA を取得できない"
-    echo "$(wslpath -u "$la")/chrome-cdp"
+    win_base || die "Windows の USERPROFILE を取得できない(WSL の interop を確認する)"
+    wslpath -u "$WIN_BASE"
 }
 
 # ---- 状態の判定 ----
@@ -625,7 +652,11 @@ env_value() {
 }
 
 show_help() {
-    local skill_dir readme update
+    local skill_dir readme update def_udd
+    # 既定のプロファイル。USERPROFILE を取得できなくてもヘルプは出す
+    if win_base; then def_udd="$WIN_BASE\\profile"; else def_udd="$WIN_BASE_DESC\\profile"; fi
+    USER_DATA_DIR=${CHROME_CDP_USER_DATA_DIR:-$def_udd}
+    set_chrome_args
     skill_dir=$(realpath -m "$SCRIPT_DIR/..")
     readme=$skill_dir/README.md
     if [ -e "$skill_dir/.git" ]; then
@@ -653,7 +684,7 @@ start は Chrome を次のコマンドで起動する(起動していないと�
 
 環境変数:
   CHROME_CDP_USER_DATA_DIR  Chrome のプロファイル(Windows のパス)。普段使いとは別にする
-                            今: $(env_value CHROME_CDP_USER_DATA_DIR "$DEFAULT_USER_DATA_DIR")
+                            今: $(env_value CHROME_CDP_USER_DATA_DIR "$def_udd")
   CHROME_CDP_EXE            chrome.exe(WSL のパス)
                             今: $(env_value CHROME_CDP_EXE "$DEFAULT_CHROME_EXE")
   CHROME_CDP_PORT           CDP のポート。変えるなら MCP の登録の $DEFAULT_PORT も変える
@@ -674,9 +705,9 @@ for arg in "$@"; do
     case $arg in -h|--help) show_help; exit 0 ;; esac
 done
 case "${1:-}" in
-    status) [ $# -le 1 ] || usage "status は引数を取らない"; do_status ;;
-    start)  [ $# -le 2 ] || usage "start の引数が多い"; do_start "${2:-}" ;;
-    stop)   [ $# -le 1 ] || usage "stop は引数を取らない"; do_stop ;;
+    status) [ $# -le 1 ] || usage "status は引数を取らない"; init_paths; do_status ;;
+    start)  [ $# -le 2 ] || usage "start の引数が多い"; init_paths; do_start "${2:-}" ;;
+    stop)   [ $# -le 1 ] || usage "stop は引数を取らない"; init_paths; do_stop ;;
     help)   show_help ;;
     '')     usage ;;
     *)      usage "不明なコマンド: $1" ;;

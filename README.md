@@ -184,8 +184,8 @@ claude mcp remove chrome-devtools -s user
 rm -rf ~/.claude/skills/chrome-cdp
 ```
 
-Windows 側に残るものは、Chrome のプロファイル(既定は `C:\temp\chrome-cdp-profile`)と、リレーのコピー
-(`%LOCALAPPDATA%\chrome-cdp`)。要らなければ削除する。
+Windows 側には `%USERPROFILE%\.cache\chrome-cdp` が残る(既定の Chrome のプロファイル `profile` と、
+リレーのコピー)。要らなければ削除する。
 
 ## 使い方
 
@@ -259,7 +259,7 @@ status の各行:
 
 | 変数 | 既定値 | 内容 |
 | --- | --- | --- |
-| `CHROME_CDP_USER_DATA_DIR` | `C:\temp\chrome-cdp-profile` | Chrome のプロファイル(Windows のパス)。普段使いとは別にする |
+| `CHROME_CDP_USER_DATA_DIR` | `%USERPROFILE%\.cache\chrome-cdp\profile` | Chrome のプロファイル(Windows のパス)。普段使いとは別の、ほかのユーザーが読み書きできない場所にする |
 | `CHROME_CDP_EXE` | `/mnt/c/Program Files/Google/Chrome/Application/chrome.exe` | chrome.exe(WSL のパス) |
 | `CHROME_CDP_PORT` | `9222` | CDP のポート。変えるなら MCP の登録コマンドの 9222 も変える(SKILL.md の説明は 9222 のまま) |
 
@@ -276,9 +276,14 @@ Claude Code から使うときは、`~/.claude/settings.json` の `env` に書�
 ## セキュリティ
 
 - CDP には認証が無い。Chrome が CDP 付きで動いている間は、WSL 内のプロセスを含め、同じマシンのプロセスは誰でも
-  その Chrome を操作でき、Cookie なども読める。専用のプロファイルを使い、個人のアカウントではログインしない。
+  その Chrome を操作でき、Cookie なども読める。ログアウトせずにユーザーを切り替えたときの、ほかのユーザーの
+  プロセスも含む。専用のプロファイルを使い、個人のアカウントではログインしない。使い終わったら stop する。
+- 既定のプロファイルは、本人しか読み書きできない `%USERPROFILE%\.cache\chrome-cdp\profile` に置く。
+  `C:\temp` などの下は、そのマシンにログインできる全員が読み書きできる(`Authenticated Users` に変更の権限がある)
+  ので、ほかのユーザーにプロファイル(履歴など)を読まれたり、書き換えられたりする。
+  `CHROME_CDP_USER_DATA_DIR` を設定するときも、そういう場所は避ける。
 - リレーは WSL のゲートウェイ IP でだけ待ち受け、127.0.0.1:9222 にだけ中継する。
-- リレーは `%LOCALAPPDATA%\chrome-cdp\cdp-relay.ps1` にコピーし、`-ExecutionPolicy Bypass` で実行する。
+- リレーは `%USERPROFILE%\.cache\chrome-cdp\cdp-relay.ps1` にコピーし、`-ExecutionPolicy Bypass` で実行する。
   ログは WSL の `/tmp/chrome-cdp-relay.log`。
 - Chrome は拡張機能を無効にして起動する(拡張機能の content script が画面の書き換えに反応して、
   操作のたびに数秒固まったことがあるため)。

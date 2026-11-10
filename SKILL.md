@@ -124,7 +124,7 @@ GUI のあるこの Windows で Chrome を動かし、ssh のポート転送で�
   ゲートウェイはルーターなのでリレーは立てない(start は自動で `--no-relay` 相当)。MCP は常に WSL の 127.0.0.1:9222 に繋ぐ。
 - WSL を再起動するとゲートウェイ IP が変わる。`start` はリレーを今の IP で立て直す。
 - CDP には認証が無く、WSL 内のプロセスは誰でもこの Chrome を操作できる。プロファイルは普段使いと別のもの
-  (環境変数 `CHROME_CDP_USER_DATA_DIR`、既定は `C:\temp\chrome-cdp-profile`)を使う。個人のアカウントでログインしない。
+  (環境変数 `CHROME_CDP_USER_DATA_DIR`、既定は `%USERPROFILE%\.cache\chrome-cdp\profile`)を使う。個人のアカウントでログインしない。
 - MCP サーバーの登録(user スコープ)。消えていたらこれで登録し直す。接続先は起動時に決める
   (mirrored か、WSL の :9222 で何かが待ち受けていれば 127.0.0.1、いなければゲートウェイ IP):
 
