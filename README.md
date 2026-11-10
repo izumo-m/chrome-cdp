@@ -61,7 +61,7 @@ WSL の 127.0.0.1:9222 に、いなければゲートウェイ IP:9222 に繋ぐ
   - WSL の interop が有効なこと(WSL から `cmd.exe`、`netstat.exe`、`powershell.exe`、`curl.exe` を実行する)
 - Windows の Google Chrome
   - 既定では `C:\Program Files\Google\Chrome\Application\chrome.exe` を使う。別の場所なら `CHROME_CDP_EXE` を設定する。
-- WSL 側のコマンド: bash、curl、iproute2(`ip`、`ss`)、util-linux(`setsid`)
+- WSL 側のコマンド: bash、curl、iproute2(`ip`、`ss`)、util-linux(`setsid`)、`iconv`、`base64`
 - Node.js 22.12 以上(stop と、`npx` で動かす chrome-devtools-mcp が使う)
 - Claude Code
 
@@ -90,7 +90,7 @@ clone した `~/.claude/skills/chrome-cdp/README.md` のこの節を読み直し
    uname -r                                               # microsoft-standard-WSL2 などを含む(WSL2 である)
    (cd /mnt/c && /mnt/c/Windows/System32/cmd.exe /c ver)  # Windows のバージョンが出る(WSL の interop が有効)
    node --version                                         # v22.12 以上
-   command -v git npx curl ip ss setsid claude            # すべて見つかる
+   command -v git npx curl ip ss setsid iconv base64 claude   # すべて見つかる
    ls "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"   # Windows の Chrome(既定の場所)
    ```
 
@@ -239,6 +239,7 @@ WSL が NAT で localhost の転送が有効(既定)なら、転送している�
 ~/.claude/skills/chrome-cdp/scripts/chrome-cdp.sh start             # リレーと Chrome を起動する(起動済みの部分は何もしない)
 ~/.claude/skills/chrome-cdp/scripts/chrome-cdp.sh start --no-relay  # Chrome だけ起動する(ssh の転送用)
 ~/.claude/skills/chrome-cdp/scripts/chrome-cdp.sh stop              # Chrome を正常終了させ、リレーを止める
+~/.claude/skills/chrome-cdp/scripts/chrome-cdp.sh --help            # 使い方・環境変数の今の値・終了コードを表示する
 ```
 
 status の各行:
