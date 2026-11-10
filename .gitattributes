@@ -1,0 +1,3 @@
+# chrome-cdp.sh は WSL の bash で実行するので、Windows の git で clone しても LF のままにする。
+# cdp-relay.ps1 は Windows PowerShell 5.1 が LF のままでも読める。
+* text=auto eol=lf

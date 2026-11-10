@@ -1,0 +1,15 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+## local rules
+CLAUDE.local.md
+.claude/settings.local.json
+.local/
